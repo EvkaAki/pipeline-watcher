@@ -1,0 +1,1 @@
+* * * * * cd /app && /usr/local/bin/flask update-pipelines >> /app/cron.log 2>&1
