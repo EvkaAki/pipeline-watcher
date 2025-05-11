@@ -12,6 +12,5 @@ COPY . .
 
 COPY cronjob /etc/cron.d/mycron
 RUN chmod 0644 /etc/cron.d/mycron && crontab /etc/cron.d/mycron
-RUN printenv >> /etc/environment
 
-CMD ["cron", "-f"]
+ENTRYPOINT ["/bin/sh", "-c", "printenv >> /etc/environment && cron -f"]
