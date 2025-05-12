@@ -2,6 +2,9 @@ import os
 import psycopg2
 import kfp
 from flask import Flask
+import boto3
+from botocore.client import Config
+from botocore.exceptions import ClientError
 
 app = Flask(__name__)
 
@@ -31,6 +34,25 @@ def get_admin_client():
         print("KFP admin client error:", e)
         return None
 
+def check_output_artefact(path):
+    s3 = boto3.client(
+        's3',
+        endpoint_url='http://minio-service.kubeflow.svc.cluster.local:9000',
+        aws_access_key_id=os.getenv('MINIO_ACCESS_KEY'),
+        aws_secret_access_key=os.getenv('MINIO_SECRET_KEY'),
+        config=Config(signature_version='s3v4', s3={'addressing_style': 'path'}),
+        region_name='us-east-1'
+    )
+
+    bucket = 'artifacts'
+    try:
+        s3.head_object(Bucket=bucket, Key=path)
+        return True
+    except ClientError as e:
+        if e.response['Error']['Code'] in ['404', 'NoSuchKey']:
+            return False
+        raise
+
 @app.cli.command("update-pipelines")
 def update_pipelines():
     print("Starting job...")
@@ -50,8 +72,12 @@ def update_pipelines():
                     result_url = f"{run_id}/mock-model/model_path.signed.zip"
                     print(f"Run state: {run.state} — name: {run.display_name} — run_id: {run_id}")
                     if run.state == "SUCCEEDED":
+                        result_exists = check_output_artefact(result_url)
+                        if not result_exists:
+                            cur.execute("UPDATE app_runrequest SET result = %s WHERE id = %s;", ('None', id,))
+                        else:
+                            cur.execute("UPDATE app_runrequest SET result = %s WHERE id = %s;", (result_url, id,))
                         cur.execute("UPDATE app_runrequest SET state = 3 WHERE id = %s;", (id,))
-                        cur.execute("UPDATE app_runrequest SET result = %s WHERE id = %s;", (result_url, id,))
                     elif run.state == "FAILED":
                         cur.execute("UPDATE app_runrequest SET state = 4 WHERE id = %s;", (id,))
                 except Exception as e:
