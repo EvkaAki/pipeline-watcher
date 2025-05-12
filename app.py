@@ -1,5 +1,3 @@
-~
-"app.py" 66L, 2269B                                                                                                                                                                                                                                                                                         55,47         All
 import os
 import psycopg2
 import kfp
