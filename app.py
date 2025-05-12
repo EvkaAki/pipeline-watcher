@@ -1,3 +1,5 @@
+~
+"app.py" 66L, 2269B                                                                                                                                                                                                                                                                                         55,47         All
 import os
 import psycopg2
 import kfp
@@ -47,9 +49,11 @@ def update_pipelines():
                 print(f"Request ID: {id}, Run ID: {run_id}")
                 try:
                     run = client.get_run(run_id)
+                    result_url = f"{run_id}/mock-model/model_path.signed.zip"
                     print(f"Run state: {run.state} — name: {run.display_name} — run_id: {run_id}")
                     if run.state == "SUCCEEDED":
                         cur.execute("UPDATE app_runrequest SET state = 3 WHERE id = %s;", (id,))
+                        cur.execute("UPDATE app_runrequest SET result = %s WHERE id = %s;", (result_url, id,))
                     elif run.state == "FAILED":
                         cur.execute("UPDATE app_runrequest SET state = 4 WHERE id = %s;", (id,))
                 except Exception as e:

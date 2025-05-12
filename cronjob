@@ -1,1 +1,1 @@
-* * * * * cd /app && /usr/local/bin/flask update-pipelines >> /app/cron.log 2>&1
+* * * * * cd /app && /usr/local/bin/flask update-pipelines > /dev/null 2>&1
